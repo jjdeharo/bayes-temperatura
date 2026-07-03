@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validación Monte Carlo — herramienta del autor</title>
+<style>
+  :root {
+    --plano: #f9f9f7; --superficie: #fcfcfb; --tinta: #0b0b0b;
+    --tinta-2: #52514e; --silenciado: #898781; --linea: #e1e0d9;
+    --borde: rgba(11,11,11,0.10); --acento: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --plano: #0d0d0d; --superficie: #1a1a19; --tinta: #ffffff;
+      --tinta-2: #c3c2b7; --silenciado: #898781; --linea: #2c2c2a;
+      --borde: rgba(255,255,255,0.10); --acento: #3987e5;
+    }
+  }
+  body {
+    margin: 0; background: var(--plano); color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.4rem; }
+  p { color: var(--tinta-2); }
+  .tarjeta {
+    background: var(--superficie); border: 1px solid var(--borde);
+    border-radius: 12px; padding: 20px; margin-bottom: 16px;
+  }
+  button {
+    font: inherit; cursor: pointer; background: var(--acento); color: #fff;
+    border: none; border-radius: 8px; padding: 10px 22px;
+  }
+  table { border-collapse: collapse; margin-top: 12px; font-variant-numeric: tabular-nums; }
+  th, td {
+    border-bottom: 1px solid var(--linea);
+    padding: 6px 14px 6px 0; text-align: right;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--silenciado); font-weight: 500; }
+  td.diagonal { font-weight: 600; color: var(--tinta); }
+  .nota { font-size: 0.88rem; color: var(--silenciado); }
+  .site-footer {
+    background: #1e293b;
+    color: #cbd5e1;
+    text-align: center;
+    font-size: 0.82rem;
+    padding: 1rem 1.5rem;
+    line-height: 1.8;
+    border-radius: 12px;
+    margin: 28px 0 20px;
+  }
+  .site-footer a { color: #a5b4fc; text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
+  .site-footer .sep { margin: 0 0.5rem; opacity: 0.4; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Validación Monte Carlo del diseño</h1>
+  <p><strong>Herramienta del autor, no del alumnado.</strong> Genera
+  respondentes sintéticos situados en cada hipótesis, les pasa el test con la
+  misma selección adaptativa y el mismo criterio de parada que usa el recurso,
+  y construye la matriz de confusión (hipótesis real frente a diagnosticada).
+  Mide la <em>separabilidad interna</em> del diseño bajo el modelo: si la
+  matriz de verosimilitudes distingue bien las hipótesis. No es validez
+  empírica.</p>
+
+  <div class="tarjeta">
+    <button id="btn-ejecutar">Ejecutar 500 simulaciones por hipótesis</button>
+    <div id="resultados"></div>
+  </div>
+
+  <p class="nota">El recurso del alumno es <code>index.html</code>; el modelo
+  compartido está en <code>motor.js</code>.</p>
+
+  <footer class="site-footer">
+    © <a href="https://bilateria.org" target="_blank" rel="noopener">Juan José de Haro</a>
+    <span class="sep">·</span>
+    Contenido: <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
+    <span class="sep">·</span>
+    Código: <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
+  </footer>
+</main>
+
+<script src="motor.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const N_SIM = 500;
+
+  function muestrear(dist) {
+    const u = Math.random();
+    let acumulado = 0;
+    for (let r = 0; r < dist.length; r++) {
+      acumulado += dist[r];
+      if (u < acumulado) return r;
+    }
+    return dist.length - 1;
+  }
+
+  function simularSesion(iVerdadera) {
+    let posterior = priorUniforme();
+    let restantes = BANCO.map(function (_, i) { return i; });
+    let n = 0;
+    let parada;
+    for (;;) {
+      const eleccion = seleccionar(posterior, restantes);
+      const item = BANCO[eleccion.idx];
+      restantes = restantes.filter(function (i) { return i !== eleccion.idx; });
+      const r = muestrear(verosimilitudes(item)[iVerdadera]);
+      posterior = actualizar(posterior, item, r);
+      n++;
+      parada = estadoParada(posterior, n, restantes.length);
+      if (parada.parar) break;
+    }
+    return { map: hipotesisMap(posterior), firme: parada.firme, n: n };
+  }
+
+  function ejecutar() {
+    const nH = HIPOTESIS.length;
+    const confusion = HIPOTESIS.map(function () { return new Array(nH).fill(0); });
+    const largos = new Array(nH).fill(0);
+    const firmes = new Array(nH).fill(0);
+
+    for (let i = 0; i < nH; i++) {
+      for (let s = 0; s < N_SIM; s++) {
+        const res = simularSesion(i);
+        confusion[i][res.map]++;
+        largos[i] += res.n;
+        if (res.firme) firmes[i]++;
+      }
+    }
+
+    let encabezado = '<tr><th>Hipótesis real \\ diagnosticada</th>';
+    HIPOTESIS.forEach(function (h) { encabezado += '<th>' + h.id + '</th>'; });
+    encabezado += '<th>media preguntas</th><th>cierres firmes</th></tr>';
+
+    let filas = '';
+    HIPOTESIS.forEach(function (h, i) {
+      filas += '<tr><td>' + h.nombre + ' (' + h.id + ')</td>';
+      for (let j = 0; j < nH; j++) {
+        const pct = (100 * confusion[i][j] / N_SIM).toFixed(1) + ' %';
+        filas += '<td' + (i === j ? ' class="diagonal"' : '') + '>' + pct + '</td>';
+      }
+      filas += '<td>' + (largos[i] / N_SIM).toFixed(1) + '</td>';
+      filas += '<td>' + (100 * firmes[i] / N_SIM).toFixed(0) + ' %</td></tr>';
+    });
+
+    document.getElementById('resultados').innerHTML =
+      '<div style="overflow-x:auto"><table><thead>' + encabezado +
+      '</thead><tbody>' + filas + '</tbody></table></div>' +
+      '<p class="nota">La diagonal es el porcentaje de respondentes ' +
+      'sintéticos correctamente clasificados. Es fiabilidad bajo el modelo: ' +
+      'los respondentes se generan con la misma matriz que luego los ' +
+      'diagnostica.</p>';
+  }
+
+  document.getElementById('btn-ejecutar').addEventListener('click', ejecutar);
+})();
+</script>
+</body>
+</html>

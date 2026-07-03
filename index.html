@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Frío o caliente? — diagnóstico adaptativo sobre calor y temperatura</title>
+<style>
+  :root {
+    --plano: #f9f9f7;
+    --superficie: #fcfcfb;
+    --tinta: #0b0b0b;
+    --tinta-2: #52514e;
+    --silenciado: #898781;
+    --linea: #e1e0d9;
+    --eje: #c3c2b7;
+    --borde: rgba(11, 11, 11, 0.10);
+    --serie-tacto: #2a78d6;
+    --serie-abrigo: #1baf7a;
+    --serie-ok: #eda100;
+    --bien: #0ca30c;
+    --bien-texto: #006300;
+    --mal: #d03b3b;
+    --acento: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --plano: #0d0d0d;
+      --superficie: #1a1a19;
+      --tinta: #ffffff;
+      --tinta-2: #c3c2b7;
+      --silenciado: #898781;
+      --linea: #2c2c2a;
+      --eje: #383835;
+      --borde: rgba(255, 255, 255, 0.10);
+      --serie-tacto: #3987e5;
+      --serie-abrigo: #199e70;
+      --serie-ok: #c98500;
+      --bien: #0ca30c;
+      --bien-texto: #0ca30c;
+      --mal: #d03b3b;
+      --acento: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plano);
+    color: var(--tinta);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 16px 0;
+  }
+  header h1 {
+    font-size: 1.5rem;
+    margin: 8px 0 4px;
+  }
+  header p.sub {
+    color: var(--tinta-2);
+    margin: 0 0 20px;
+  }
+  .tarjeta {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+  .btn-principal {
+    background: var(--acento);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 1.05rem;
+  }
+  .btn-principal:hover { filter: brightness(1.08); }
+
+  /* Hipótesis en la pantalla inicial */
+  .titulo-hipotesis {
+    font-size: 0.95rem;
+    margin: 20px 0 6px;
+  }
+  ul.lista-hipotesis {
+    list-style: none;
+    margin: 0 0 20px;
+    padding-left: 4px;
+    color: var(--tinta-2);
+    font-size: 0.95rem;
+  }
+  ul.lista-hipotesis li { margin: 6px 0; }
+  ul.lista-hipotesis .punto {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: baseline;
+  }
+  ul.lista-hipotesis strong { color: var(--tinta); font-weight: 600; }
+
+  /* Aviso de demostración en el panel docente */
+  .aviso-demo {
+    border: 1px solid var(--borde);
+    border-left: 4px solid var(--serie-ok);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 12px 0 4px;
+    font-size: 0.9rem;
+  }
+
+  /* Pregunta */
+  .contador {
+    color: var(--silenciado);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
+  .enunciado { font-size: 1.15rem; margin: 0 0 18px; max-width: 60ch; }
+  .opciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    align-items: stretch;
+  }
+  .opciones button {
+    background: var(--superficie);
+    border: 1.5px solid var(--eje);
+    border-radius: 10px;
+    color: var(--tinta);
+    padding: 12px 16px;
+    font-size: 1rem;
+    text-align: left;
+  }
+  .opciones button:hover:not(:disabled) { border-color: var(--acento); }
+  .opciones button:disabled { cursor: default; opacity: 0.55; }
+  .opciones button.elegida { opacity: 1; border-color: var(--acento); }
+
+  /* Retroalimentación */
+  .feedback { margin-top: 18px; }
+  .feedback .veredicto {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .feedback .veredicto.ok { color: var(--bien-texto); }
+  .feedback .veredicto.ko { color: var(--mal); }
+  .feedback .explica {
+    color: var(--tinta-2);
+    margin: 6px 0 14px;
+  }
+
+  /* Barras del posterior */
+  .viz { margin-top: 8px; }
+  .viz-fila {
+    display: grid;
+    grid-template-columns: minmax(120px, 200px) 1fr 52px;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+  }
+  .viz-etiqueta {
+    font-size: 0.88rem;
+    color: var(--tinta-2);
+    text-align: right;
+  }
+  .viz-fila.map .viz-etiqueta { color: var(--tinta); font-weight: 600; }
+  .viz-pista {
+    border-left: 2px solid var(--eje);
+    height: 18px;
+  }
+  .viz-barra {
+    height: 100%;
+    border-radius: 0 4px 4px 0;
+    min-width: 2px;
+    transition: width 0.35s ease;
+  }
+  .viz-valor {
+    font-size: 0.88rem;
+    color: var(--tinta);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Resultado final */
+  .resultado h2 { margin-top: 0; }
+  .banda-provisional {
+    border: 1px solid var(--borde);
+    border-left: 4px solid var(--serie-ok);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--tinta-2);
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+  }
+  .diagnostico { margin: 4px 0 2px; font-size: 1.1rem; }
+  .confianza { color: var(--tinta-2); margin: 0 0 14px; }
+  .bloque h3 {
+    font-size: 0.95rem;
+    margin: 18px 0 6px;
+  }
+  .bloque p { margin: 0; color: var(--tinta-2); }
+  table.recorrido {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    margin-top: 8px;
+  }
+  table.recorrido th {
+    text-align: left;
+    color: var(--silenciado);
+    font-weight: 500;
+    border-bottom: 1px solid var(--linea);
+    padding: 4px 8px 6px;
+  }
+  table.recorrido td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--linea);
+  }
+  td.res-ok { color: var(--bien-texto); white-space: nowrap; }
+  td.res-ko { color: var(--mal); white-space: nowrap; }
+
+  /* Panel docente */
+  details.docente {
+    background: var(--superficie);
+    border: 1px dashed var(--eje);
+    border-radius: 12px;
+    padding: 14px 20px;
+    color: var(--tinta-2);
+    font-size: 0.92rem;
+  }
+  details.docente summary {
+    cursor: pointer;
+    color: var(--tinta);
+    font-weight: 600;
+  }
+  details.docente .dato { margin: 10px 0 2px; }
+  details.docente table {
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  details.docente td, details.docente th {
+    border-bottom: 1px solid var(--linea);
+    padding: 3px 10px 3px 0;
+    text-align: left;
+    font-weight: normal;
+  }
+  .docente-cuerpo {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px 32px;
+  }
+  @media (min-width: 640px) {
+    .docente-cuerpo { grid-template-columns: 1.3fr 1fr; align-items: start; }
+  }
+
+  footer.nota-demo {
+    color: var(--silenciado);
+    font-size: 0.8rem;
+    margin: 28px 0 20px;
+    text-align: center;
+  }
+  .site-footer {
+    background: #1e293b;
+    color: #cbd5e1;
+    text-align: center;
+    font-size: 0.82rem;
+    padding: 1rem 1.5rem;
+    line-height: 1.8;
+    border-radius: 12px;
+    margin: 0 0 28px;
+  }
+  .site-footer a { color: #a5b4fc; text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
+  .site-footer .sep { margin: 0 0.5rem; opacity: 0.4; }
+  .oculto { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>¿Frío o caliente?</h1>
+    <p class="sub">Un reto sobre calor y temperatura que se adapta a tus respuestas (Física y Química, ESO).</p>
+  </header>
+
+  <section id="pantalla-inicio" class="tarjeta">
+    <p>Te plantearé situaciones cotidianas sobre el frío y el calor. En cada
+    una, elige la respuesta que te parezca correcta. No es un examen: según
+    lo que respondas, el sistema elegirá la siguiente pregunta y, al final,
+    te dirá qué idea sobre el calor estás usando y qué te puede ayudar a
+    afinarla.</p>
+    <p class="sub" style="font-size:0.9rem">Suelen bastar entre 4 y 10 preguntas.</p>
+    <h3 class="titulo-hipotesis">Qué comprueba este programa</h3>
+    <p class="sub" style="font-size:0.95rem">Va acumulando evidencia para
+    decidir cuál de estas tres ideas sobre el calor explica mejor tus
+    respuestas:</p>
+    <ul class="lista-hipotesis" id="lista-hipotesis"></ul>
+    <button class="btn-principal" id="btn-empezar">Empezar</button>
+  </section>
+
+  <section id="pantalla-pregunta" class="tarjeta oculto" aria-live="polite">
+    <p class="contador" id="contador"></p>
+    <p class="enunciado" id="enunciado"></p>
+    <div class="opciones" id="zona-opciones"></div>
+    <div class="feedback oculto" id="zona-feedback">
+      <p class="veredicto" id="veredicto"></p>
+      <p class="explica" id="explicacion"></p>
+      <button class="btn-principal" id="btn-siguiente">Siguiente</button>
+    </div>
+  </section>
+
+  <section id="pantalla-final" class="tarjeta resultado oculto" aria-live="polite">
+    <h2>Resultado</h2>
+    <div id="aviso-provisional" class="banda-provisional oculto"></div>
+    <p class="diagnostico" id="texto-diagnostico"></p>
+    <p class="confianza" id="texto-confianza"></p>
+    <div class="viz" id="grafico-final"></div>
+    <div class="bloque">
+      <h3>Qué significa</h3>
+      <p id="texto-descripcion"></p>
+      <h3>Siguiente paso recomendado</h3>
+      <p id="texto-recomendacion"></p>
+      <h3>Recorrido de la sesión</h3>
+      <div style="overflow-x:auto">
+        <table class="recorrido">
+          <thead>
+            <tr><th>Situación</th><th>Tu respuesta</th><th>Resultado</th></tr>
+          </thead>
+          <tbody id="cuerpo-recorrido"></tbody>
+        </table>
+      </div>
+    </div>
+    <p style="margin-top:18px">
+      <button class="btn-principal" id="btn-repetir">Empezar de nuevo</button>
+    </p>
+  </section>
+
+  <details class="docente" id="panel-docente">
+    <summary>Panel docente: estado bayesiano en directo</summary>
+    <p class="aviso-demo"><strong>Aviso:</strong> este recurso es una
+    demostración. En un uso real con alumnado, este panel no existiría:
+    el estado bayesiano es información interna del sistema (y del docente),
+    y mostrarla condicionaría las respuestas.</p>
+    <p class="dato">El sistema mantiene una probabilidad para cada hipótesis
+    sobre el modelo mental del alumno y la actualiza con cada respuesta
+    (regla de Bayes). La siguiente pregunta se elige maximizando la ganancia
+    esperada de información.</p>
+    <div class="docente-cuerpo">
+      <div>
+        <div class="viz" id="grafico-docente"></div>
+        <p class="dato" id="dato-entropia"></p>
+      </div>
+      <div id="dato-actualizacion"></div>
+    </div>
+  </details>
+
+  <footer class="nota-demo">
+    Demostración de recurso adaptativo bayesiano de tipo nominal unifactorial
+    (hipótesis excluyentes, matriz de verosimilitudes explícita).
+  </footer>
+
+  <footer class="site-footer">
+    © <a href="https://bilateria.org" target="_blank" rel="noopener">Juan José de Haro</a>
+    <span class="sep">·</span>
+    Contenido: <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
+    <span class="sep">·</span>
+    Código: <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>
+  </footer>
+</main>
+
+<script src="motor.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const COLOR_HIPOTESIS = {
+    TACTO: 'var(--serie-tacto)',
+    ABRIGO: 'var(--serie-abrigo)',
+    OK: 'var(--serie-ok)'
+  };
+
+  const $ = function (id) { return document.getElementById(id); };
+
+  let posterior, restantes, itemActual, historial;
+
+  function empezar() {
+    posterior = priorUniforme();
+    restantes = BANCO.map(function (_, i) { return i; });
+    historial = [];
+    $('pantalla-inicio').classList.add('oculto');
+    $('pantalla-final').classList.add('oculto');
+    $('pantalla-pregunta').classList.remove('oculto');
+    pintarDocente(null);
+    siguientePregunta();
+  }
+
+  function siguientePregunta() {
+    const eleccion = seleccionar(posterior, restantes);
+    itemActual = BANCO[eleccion.idx];
+    restantes = restantes.filter(function (i) { return i !== eleccion.idx; });
+
+    $('contador').textContent = 'Pregunta ' + (historial.length + 1);
+    $('enunciado').textContent = itemActual.enunciado;
+
+    const zona = $('zona-opciones');
+    zona.innerHTML = '';
+    itemActual.opciones.forEach(function (t, r) {
+      const b = document.createElement('button');
+      b.textContent = t;
+      b.addEventListener('click', function () { responder(r, b); });
+      zona.appendChild(b);
+    });
+    $('zona-feedback').classList.add('oculto');
+  }
+
+  function responder(r, boton) {
+    Array.prototype.forEach.call(
+      $('zona-opciones').querySelectorAll('button'),
+      function (b) { b.disabled = true; }
+    );
+    boton.classList.add('elegida');
+
+    const M = verosimilitudes(itemActual);
+    posterior = actualizar(posterior, itemActual, r);
+    const acierto = r === itemActual.correcta;
+    historial.push({ item: itemActual, respuesta: r, acierto: acierto });
+
+    const veredicto = $('veredicto');
+    if (acierto) {
+      veredicto.textContent = '✓ Correcto';
+      veredicto.className = 'veredicto ok';
+    } else {
+      veredicto.textContent = '✗ No es así';
+      veredicto.className = 'veredicto ko';
+    }
+    $('explicacion').textContent = itemActual.explicacion;
+    $('zona-feedback').classList.remove('oculto');
+
+    pintarDocente({ item: itemActual, M: M, r: r });
+
+    const parada = estadoParada(posterior, historial.length, restantes.length);
+    $('btn-siguiente').textContent = parada.parar ? 'Ver resultado' : 'Siguiente';
+    $('btn-siguiente').onclick = parada.parar ? terminar : siguientePregunta;
+  }
+
+  function terminar() {
+    const parada = estadoParada(posterior, historial.length, restantes.length);
+    const iMap = hipotesisMap(posterior);
+    const h = HIPOTESIS[iMap];
+
+    $('pantalla-pregunta').classList.add('oculto');
+    $('pantalla-final').classList.remove('oculto');
+
+    const aviso = $('aviso-provisional');
+    if (parada.firme) {
+      aviso.classList.add('oculto');
+    } else {
+      aviso.classList.remove('oculto');
+      aviso.textContent =
+        'Resultado provisional: con las respuestas de esta sesión ninguna ' +
+        'hipótesis alcanza la confianza mínima (80 %). Mira la distribución ' +
+        'completa, no solo la etiqueta más probable.';
+    }
+
+    $('texto-diagnostico').textContent =
+      'Idea más probable: ' + h.nombre.toLowerCase() + '.';
+    $('texto-confianza').textContent =
+      'Confianza: ' + porcentaje(posterior[iMap]) +
+      ' tras ' + historial.length + ' preguntas (' +
+      historial.filter(function (x) { return x.acierto; }).length +
+      ' aciertos).';
+    $('texto-descripcion').textContent = h.descripcion;
+    $('texto-recomendacion').textContent = h.recomendacion;
+
+    pintarBarras($('grafico-final'), posterior, iMap);
+
+    const cuerpo = $('cuerpo-recorrido');
+    cuerpo.innerHTML = '';
+    historial.forEach(function (paso) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + paso.item.corto + '</td>' +
+        '<td>' + paso.item.opciones[paso.respuesta] + '</td>' +
+        (paso.acierto
+          ? '<td class="res-ok">✓ correcta</td>'
+          : '<td class="res-ko">✗ incorrecta</td>');
+      cuerpo.appendChild(tr);
+    });
+  }
+
+  /* --- Presentación --- */
+
+  function porcentaje(p) {
+    if (p > 0.995) return '> 99 %';
+    if (p > 0 && p < 0.005) return '< 1 %';
+    return Math.round(p * 100) + ' %';
+  }
+
+  function pintarBarras(contenedor, dist, iMap) {
+    contenedor.innerHTML = '';
+    HIPOTESIS.forEach(function (h, i) {
+      const fila = document.createElement('div');
+      fila.className = 'viz-fila' + (i === iMap ? ' map' : '');
+      fila.innerHTML =
+        '<span class="viz-etiqueta">' + h.nombre + '</span>' +
+        '<div class="viz-pista"><div class="viz-barra" style="width:' +
+        (dist[i] * 100).toFixed(1) + '%;background:' +
+        COLOR_HIPOTESIS[h.id] + '"></div></div>' +
+        '<span class="viz-valor">' + porcentaje(dist[i]) + '</span>';
+      contenedor.appendChild(fila);
+    });
+  }
+
+  function pintarDocente(ultima) {
+    pintarBarras($('grafico-docente'), posterior, hipotesisMap(posterior));
+    const parada = estadoParada(posterior, historial.length, restantes.length);
+    $('dato-entropia').textContent =
+      'Entropía: ' + parada.h.toFixed(3) + ' bits (umbral de cierre firme: ' +
+      H_STOP.toFixed(3) + ' bits con p_min = ' + PARAMETROS.pMin + '). ' +
+      'Preguntas respondidas: ' + historial.length + '.';
+
+    const zona = $('dato-actualizacion');
+    if (!ultima) { zona.innerHTML = ''; return; }
+    let filas = '';
+    HIPOTESIS.forEach(function (h, i) {
+      filas += '<tr><td>' + h.nombre + '</td><td>' +
+        ultima.M[i][ultima.r].toFixed(2) + '</td></tr>';
+    });
+    zona.innerHTML =
+      '<p class="dato">Verosimilitud de la última respuesta, ' +
+      'P(respuesta elegida | hipótesis):</p>' +
+      '<table><tbody>' + filas + '</tbody></table>';
+  }
+
+  function pintarHipotesisInicio() {
+    const lista = $('lista-hipotesis');
+    HIPOTESIS.forEach(function (h) {
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span class="punto" style="background:' + COLOR_HIPOTESIS[h.id] +
+        '"></span><strong>' + h.nombre + '</strong>: ' + h.resumen + '.';
+      lista.appendChild(li);
+    });
+  }
+
+  pintarHipotesisInicio();
+  $('btn-empezar').addEventListener('click', empezar);
+  $('btn-repetir').addEventListener('click', empezar);
+})();
+</script>
+</body>
+</html>
