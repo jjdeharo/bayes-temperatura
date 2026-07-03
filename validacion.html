@@ -105,6 +105,7 @@
   function simularSesion(iVerdadera) {
     let posterior = priorUniforme();
     let restantes = BANCO.map(function (_, i) { return i; });
+    const historial = [];
     let n = 0;
     let parada;
     for (;;) {
@@ -112,12 +113,18 @@
       const item = BANCO[eleccion.idx];
       restantes = restantes.filter(function (i) { return i !== eleccion.idx; });
       const r = muestrear(verosimilitudes(item)[iVerdadera]);
+      historial.push({ item: item, respuesta: r });
       posterior = actualizar(posterior, item, r);
       n++;
       parada = estadoParada(posterior, n, restantes.length);
       if (parada.parar) break;
     }
-    return { map: hipotesisMap(posterior), firme: parada.firme, n: n };
+    return {
+      map: hipotesisMap(posterior),
+      firme: parada.firme,
+      avisoLz: !personFit(posterior, historial).fiable,
+      n: n
+    };
   }
 
   function ejecutar() {
@@ -125,6 +132,7 @@
     const confusion = HIPOTESIS.map(function () { return new Array(nH).fill(0); });
     const largos = new Array(nH).fill(0);
     const firmes = new Array(nH).fill(0);
+    const avisos = new Array(nH).fill(0);
 
     for (let i = 0; i < nH; i++) {
       for (let s = 0; s < N_SIM; s++) {
@@ -132,12 +140,13 @@
         confusion[i][res.map]++;
         largos[i] += res.n;
         if (res.firme) firmes[i]++;
+        if (res.avisoLz) avisos[i]++;
       }
     }
 
     let encabezado = '<tr><th>Hipótesis real \\ diagnosticada</th>';
     HIPOTESIS.forEach(function (h) { encabezado += '<th>' + h.id + '</th>'; });
-    encabezado += '<th>media preguntas</th><th>cierres firmes</th></tr>';
+    encabezado += '<th>media preguntas</th><th>cierres firmes</th><th>avisos l_z</th></tr>';
 
     let filas = '';
     HIPOTESIS.forEach(function (h, i) {
@@ -147,16 +156,19 @@
         filas += '<td' + (i === j ? ' class="diagonal"' : '') + '>' + pct + '</td>';
       }
       filas += '<td>' + (largos[i] / N_SIM).toFixed(1) + '</td>';
-      filas += '<td>' + (100 * firmes[i] / N_SIM).toFixed(0) + ' %</td></tr>';
+      filas += '<td>' + (100 * firmes[i] / N_SIM).toFixed(0) + ' %</td>';
+      filas += '<td>' + (100 * avisos[i] / N_SIM).toFixed(1) + ' %</td></tr>';
     });
 
     document.getElementById('resultados').innerHTML =
       '<div style="overflow-x:auto"><table><thead>' + encabezado +
       '</thead><tbody>' + filas + '</tbody></table></div>' +
       '<p class="nota">La diagonal es el porcentaje de respondentes ' +
-      'sintéticos correctamente clasificados. Es fiabilidad bajo el modelo: ' +
-      'los respondentes se generan con la misma matriz que luego los ' +
-      'diagnostica.</p>';
+      'sintéticos correctamente clasificados. «Avisos l_z»: sesiones con ' +
+      'aviso de person-fit (l_z &lt; −2); con respondentes coherentes con ' +
+      'el modelo debe ser bajo (son falsas alarmas). Es fiabilidad bajo ' +
+      'el modelo: los respondentes se generan con la misma matriz que ' +
+      'luego los diagnostica.</p>';
   }
 
   document.getElementById('btn-ejecutar').addEventListener('click', ejecutar);

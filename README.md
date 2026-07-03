@@ -34,12 +34,23 @@ alcanza la confianza mínima, se marca como provisional.
   estado bayesiano en directo (posterior, entropía y verosimilitud de la
   última respuesta), pensado para usar la página como demostración.
 - `motor.js` — hipótesis, banco de preguntas, matriz de verosimilitudes,
-  actualización bayesiana, selección adaptativa y criterio de parada.
+  actualización bayesiana, selección adaptativa, criterio de parada y
+  person-fit.
 - `validacion.html` — **herramienta del autor** (no del alumnado): validación
   Monte Carlo de la separabilidad del diseño, con matriz de confusión sobre
-  respondentes sintéticos.
+  respondentes sintéticos y tasa de falsas alarmas del aviso de person-fit.
 
 Todo funciona en local sin servidor: basta abrir `index.html` en el navegador.
+
+## Person-fit (índice l_z)
+
+Al cerrar la sesión se comprueba si el patrón de respuestas es coherente con
+la hipótesis diagnosticada (generalización politómica del índice `l_z`,
+calculada sobre la opción elegida en cada ítem). Si `l_z < −2`, el resultado
+se acompaña de un aviso de fiabilidad: puede haber descuidos, azar o una
+concepción sobre el calor que el modelo no contempla. Con pocas preguntas es
+una señal de cautela orientativa, no una prueba formal. El valor se muestra
+en directo en el panel docente.
 
 ## Fiabilidad bajo el modelo
 

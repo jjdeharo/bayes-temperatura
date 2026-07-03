@@ -403,3 +403,35 @@ function hipotesisMap(posterior) {
   }
   return mejor;
 }
+
+/*
+ * Ajuste del patrón individual (person-fit, índice l_z). Evalúa si el
+ * patrón de respuestas es coherente con la hipótesis MAP: compara la
+ * log-verosimilitud del patrón observado con su media y varianza
+ * esperadas bajo esa hipótesis, promediando sobre las opciones de cada
+ * ítem (generalización politómica del l_z clásico). Un valor muy
+ * negativo (< -2) señala un patrón que ninguna hipótesis del modelo
+ * explica bien —descuidos, azar o una concepción no contemplada— y el
+ * diagnóstico debe tomarse con cautela, aunque el posterior sea alto.
+ * Con pocas preguntas es orientativo, no una prueba formal.
+ */
+function personFit(posterior, historial) {
+  const iMap = hipotesisMap(posterior);
+  let logL = 0, esperanza = 0, varianza = 0;
+  historial.forEach(function (paso) {
+    const fila = verosimilitudes(paso.item)[iMap];
+    logL += Math.log(fila[paso.respuesta]);
+    let e = 0, e2 = 0;
+    fila.forEach(function (p) {
+      if (p > 0) {
+        const lp = Math.log(p);
+        e += p * lp;
+        e2 += p * lp * lp;
+      }
+    });
+    esperanza += e;
+    varianza += e2 - e * e;
+  });
+  const lz = varianza > 0 ? (logL - esperanza) / Math.sqrt(varianza) : 0;
+  return { lz: lz, fiable: lz >= -2 };
+}
