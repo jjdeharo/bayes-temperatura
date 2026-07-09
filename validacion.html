@@ -8,13 +8,13 @@
   :root {
     --plano: #f9f9f7; --superficie: #fcfcfb; --tinta: #0b0b0b;
     --tinta-2: #52514e; --silenciado: #898781; --linea: #e1e0d9;
-    --borde: rgba(11,11,11,0.10); --acento: #2a78d6;
+    --borde: rgba(11,11,11,0.10); --acento: #2a78d6; --mal: #b3261e;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --plano: #0d0d0d; --superficie: #1a1a19; --tinta: #ffffff;
       --tinta-2: #c3c2b7; --silenciado: #898781; --linea: #2c2c2a;
-      --borde: rgba(255,255,255,0.10); --acento: #3987e5;
+      --borde: rgba(255,255,255,0.10); --acento: #3987e5; --mal: #f2b8b5;
     }
   }
   body {
@@ -90,10 +90,28 @@
 (function () {
   'use strict';
 
+  // Valor por defecto de la metodología: al menos 500 simulaciones por hipótesis.
   const N_SIM = 500;
+  // Criterio orientativo de aceptación: por debajo, el banco no separa esa hipótesis.
+  const UMBRAL_ALERTA = 0.70;
+  // Confusión sistemática entre dos hipótesis.
+  const UMBRAL_CONFUSION = 0.20;
+
+  /* Generador sembrado (mulberry32): una validación del diseño debe ser reproducible,
+     y las hipótesis que rondan el umbral no deben entrar y salir del aviso según la
+     ejecución. */
+  const SEMILLA = 20260709;
+  let semillaEstado = SEMILLA;
+  function rng() {
+    semillaEstado |= 0;
+    semillaEstado = (semillaEstado + 0x6D2B79F5) | 0;
+    let t = Math.imul(semillaEstado ^ (semillaEstado >>> 15), 1 | semillaEstado);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
 
   function muestrear(dist) {
-    const u = Math.random();
+    const u = rng();
     let acumulado = 0;
     for (let r = 0; r < dist.length; r++) {
       acumulado += dist[r];
@@ -109,7 +127,7 @@
     let n = 0;
     let parada;
     for (;;) {
-      const eleccion = seleccionar(posterior, restantes);
+      const eleccion = seleccionar(posterior, restantes, rng);
       const item = BANCO[eleccion.idx];
       restantes = restantes.filter(function (i) { return i !== eleccion.idx; });
       const r = muestrear(verosimilitudes(item)[iVerdadera]);
@@ -128,6 +146,7 @@
   }
 
   function ejecutar() {
+    semillaEstado = SEMILLA;   // misma semilla en cada pulsación: resultados reproducibles
     const nH = HIPOTESIS.length;
     const confusion = HIPOTESIS.map(function () { return new Array(nH).fill(0); });
     const largos = new Array(nH).fill(0);
@@ -149,22 +168,67 @@
     encabezado += '<th>media preguntas</th><th>cierres firmes</th><th>avisos l_z</th></tr>';
 
     let filas = '';
+    const flojas = [], confusiones = [];
+    let largoTotal = 0, provisionalTotal = 0, diagonalTotal = 0;
+
     HIPOTESIS.forEach(function (h, i) {
+      const diagonal = confusion[i][i] / N_SIM;
+      diagonalTotal += diagonal;
+      largoTotal += largos[i] / N_SIM;
+      provisionalTotal += 1 - firmes[i] / N_SIM;
+      if (diagonal < UMBRAL_ALERTA) {
+        flojas.push(h.id + ' (' + (100 * diagonal).toFixed(1) + ' %)');
+      }
+      for (let j = 0; j < nH; j++) {
+        if (j !== i && confusion[i][j] / N_SIM >= UMBRAL_CONFUSION) {
+          confusiones.push(h.id + ' → ' + HIPOTESIS[j].id +
+            ' (' + (100 * confusion[i][j] / N_SIM).toFixed(1) + ' %)');
+        }
+      }
+
       filas += '<tr><td>' + h.nombre + ' (' + h.id + ')</td>';
       for (let j = 0; j < nH; j++) {
         const pct = (100 * confusion[i][j] / N_SIM).toFixed(1) + ' %';
-        filas += '<td' + (i === j ? ' class="diagonal"' : '') + '>' + pct + '</td>';
+        const flojo = i === j && diagonal < UMBRAL_ALERTA;
+        filas += '<td' + (i === j ? ' class="diagonal"' : '') +
+          (flojo ? ' style="color:var(--mal)"' : '') + '>' + pct + '</td>';
       }
       filas += '<td>' + (largos[i] / N_SIM).toFixed(1) + '</td>';
       filas += '<td>' + (100 * firmes[i] / N_SIM).toFixed(0) + ' %</td>';
       filas += '<td>' + (100 * avisos[i] / N_SIM).toFixed(1) + ' %</td></tr>';
     });
 
+    // Exactitud equilibrada: media de las diagonales. Con el mismo número de simulaciones
+    // por hipótesis coincide con la exactitud global, pero se nombra así porque es la que
+    // no se deja llevar por las hipótesis más fáciles si algún día se desequilibra.
+    const equilibrada = diagonalTotal / nH;
+
+    const alerta = (flojas.length || confusiones.length)
+      ? '<p class="nota" style="color:var(--mal)"><strong>Aviso:</strong> el banco no ' +
+        'separa bien todas las hipótesis bajo el propio modelo.' +
+        (flojas.length ? ' Por debajo del ' + (100 * UMBRAL_ALERTA).toFixed(0) +
+          ' % de acierto: ' + flojas.join('; ') + '.' : '') +
+        (confusiones.length ? ' Confusión sistemática (≥ ' +
+          (100 * UMBRAL_CONFUSION).toFixed(0) + ' %): ' + confusiones.join('; ') + '.' : '') +
+        ' Conviene añadir ítems que las discriminen, revisar las verosimilitudes, o ' +
+        'declarar explícitamente la limitación.</p>'
+      : '<p class="nota"><strong>Sin avisos:</strong> todas las hipótesis se recuperan por ' +
+        'encima del ' + (100 * UMBRAL_ALERTA).toFixed(0) +
+        ' % y no hay confusiones sistemáticas.</p>';
+
     document.getElementById('resultados').innerHTML =
       '<div style="overflow-x:auto"><table><thead>' + encabezado +
       '</thead><tbody>' + filas + '</tbody></table></div>' +
+      '<p class="nota"><strong>Resumen</strong> (' + N_SIM + ' simulaciones × ' + nH +
+      ' hipótesis, semilla fija): exactitud equilibrada ' +
+      (100 * equilibrada).toFixed(1) + ' % · cierres provisionales ' +
+      (100 * provisionalTotal / nH).toFixed(1) + ' % · longitud media ' +
+      (largoTotal / nH).toFixed(1) + ' preguntas.</p>' +
+      alerta +
       '<p class="nota">La diagonal es el porcentaje de respondentes ' +
-      'sintéticos correctamente clasificados. «Avisos l_z»: sesiones con ' +
+      'sintéticos correctamente clasificados. Al ser hipótesis excluyentes, ' +
+      'siempre hay una ganadora: el análogo de un diagnóstico «indeterminado» ' +
+      'es el cierre provisional. «Avisos l_z»: sesiones con ' +
       'aviso de person-fit (l_z &lt; −2); con respondentes coherentes con ' +
       'el modelo debe ser bajo (son falsas alarmas). Es fiabilidad bajo ' +
       'el modelo: los respondentes se generan con la misma matriz que ' +
