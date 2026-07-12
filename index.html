@@ -152,6 +152,7 @@
   }
   .feedback .veredicto.ok { color: var(--bien-texto); }
   .feedback .veredicto.ko { color: var(--mal); }
+  .feedback .veredicto.neutral { color: var(--tinta-2); font-weight: 500; }
   .feedback .explica {
     color: var(--tinta-2);
     margin: 6px 0 14px;
@@ -207,25 +208,21 @@
     margin: 18px 0 6px;
   }
   .bloque p { margin: 0; color: var(--tinta-2); }
-  table.recorrido {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.92rem;
-    margin-top: 8px;
+  .soluciones { margin-top: 8px; }
+  .solucion {
+    border: 1px solid var(--borde);
+    border-left: 3px solid var(--eje);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
   }
-  table.recorrido th {
-    text-align: left;
-    color: var(--silenciado);
-    font-weight: 500;
-    border-bottom: 1px solid var(--linea);
-    padding: 4px 8px 6px;
-  }
-  table.recorrido td {
-    padding: 6px 8px;
-    border-bottom: 1px solid var(--linea);
-  }
-  td.res-ok { color: var(--bien-texto); white-space: nowrap; }
-  td.res-ko { color: var(--mal); white-space: nowrap; }
+  .solucion.ok { border-left-color: var(--bien); }
+  .solucion.ko { border-left-color: var(--mal); }
+  .sol-situacion { font-weight: 600; margin: 0 0 6px; }
+  .sol-tu, .sol-correcta { margin: 2px 0; color: var(--tinta-2); }
+  .sol-explica { margin: 8px 0 0; color: var(--tinta-2); font-size: 0.95rem; }
+  .marca-ok { color: var(--bien-texto); font-weight: 600; }
+  .marca-ko { color: var(--mal); font-weight: 600; }
 
   /* Panel docente */
   details.docente {
@@ -294,10 +291,12 @@
   <section id="pantalla-inicio" class="tarjeta">
     <p>Te plantearé situaciones sobre cómo llega una especie a tener un rasgo
     útil (el cuello de la jirafa, el pelaje del oso polar…). En cada una,
-    elige la respuesta que te parezca correcta. No es un examen: según lo que
-    respondas, el sistema elegirá la siguiente pregunta y, al final, te dirá
-    qué idea sobre la evolución estás usando y qué te puede ayudar a
-    afinarla.</p>
+    elige la respuesta que te parezca correcta y responde con sinceridad: no
+    verás si aciertas hasta el final, para que unas respuestas no condicionen
+    a las siguientes. No es un examen: según lo que respondas, el sistema
+    elegirá la siguiente pregunta y, al final, te dirá qué idea sobre la
+    evolución estás usando, con las soluciones comentadas, y qué te puede
+    ayudar a afinarla.</p>
     <p class="sub" style="font-size:0.9rem">Suelen bastar entre 4 y 10 preguntas.</p>
     <h3 class="titulo-hipotesis">Qué comprueba este programa</h3>
     <p class="sub" style="font-size:0.95rem">Va acumulando evidencia para
@@ -331,15 +330,8 @@
       <p id="texto-descripcion"></p>
       <h3>Siguiente paso recomendado</h3>
       <p id="texto-recomendacion"></p>
-      <h3>Recorrido de la sesión</h3>
-      <div style="overflow-x:auto">
-        <table class="recorrido">
-          <thead>
-            <tr><th>Situación</th><th>Tu respuesta</th><th>Resultado</th></tr>
-          </thead>
-          <tbody id="cuerpo-recorrido"></tbody>
-        </table>
-      </div>
+      <h3>Soluciones comentadas</h3>
+      <div class="soluciones" id="soluciones"></div>
     </div>
     <p style="margin-top:18px">
       <button class="btn-principal" id="btn-repetir">Empezar de nuevo</button>
@@ -437,15 +429,15 @@
     const acierto = r === itemActual.correcta;
     historial.push({ item: itemActual, respuesta: r, acierto: acierto });
 
+    /* Retroalimentación neutra durante la sesión: no revelar acierto/fallo ni
+       la explicación evita contaminar las respuestas siguientes (todas las
+       preguntas miden el mismo constructo). Las soluciones se agrupan al final. */
     const veredicto = $('veredicto');
-    if (acierto) {
-      veredicto.textContent = '✓ Correcto';
-      veredicto.className = 'veredicto ok';
-    } else {
-      veredicto.textContent = '✗ No es así';
-      veredicto.className = 'veredicto ko';
-    }
-    $('explicacion').textContent = itemActual.explicacion;
+    veredicto.textContent = 'Respuesta registrada';
+    veredicto.className = 'veredicto neutral';
+    $('explicacion').textContent =
+      'Seguimos. Aún no te digo si es correcta: verás todas las soluciones ' +
+      'explicadas al terminar, para no condicionar tus siguientes respuestas.';
     $('zona-feedback').classList.remove('oculto');
 
     pintarDocente({ item: itemActual, M: M, r: r });
@@ -511,17 +503,24 @@
 
     pintarBarras($('grafico-final'), posterior, iMap);
 
-    const cuerpo = $('cuerpo-recorrido');
-    cuerpo.innerHTML = '';
-    historial.forEach(function (paso) {
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td>' + paso.item.corto + '</td>' +
-        '<td>' + paso.item.opciones[paso.respuesta] + '</td>' +
-        (paso.acierto
-          ? '<td class="res-ok">✓ correcta</td>'
-          : '<td class="res-ko">✗ incorrecta</td>');
-      cuerpo.appendChild(tr);
+    const cont = $('soluciones');
+    cont.innerHTML = '';
+    historial.forEach(function (paso, idx) {
+      const div = document.createElement('div');
+      div.className = 'solucion ' + (paso.acierto ? 'ok' : 'ko');
+      let html =
+        '<p class="sol-situacion">' + (idx + 1) + '. ' + paso.item.corto + '</p>' +
+        '<p class="sol-tu">Tu respuesta: «' + paso.item.opciones[paso.respuesta] +
+        '» ' + (paso.acierto
+          ? '<span class="marca-ok">✓ correcta</span>'
+          : '<span class="marca-ko">✗ incorrecta</span>') + '</p>';
+      if (!paso.acierto) {
+        html += '<p class="sol-correcta">Respuesta correcta: «' +
+          paso.item.opciones[paso.item.correcta] + '»</p>';
+      }
+      html += '<p class="sol-explica">' + paso.item.explicacion + '</p>';
+      div.innerHTML = html;
+      cont.appendChild(div);
     });
   }
 
