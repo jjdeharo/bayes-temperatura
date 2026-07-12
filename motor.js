@@ -1,277 +1,468 @@
 /*
- * Motor bayesiano nominal unifactorial (tipo C).
- * Demostración: ¿qué modelo mental sobre el calor y la temperatura
- * tiene el alumno? (Física y Química, ESO)
+ * Motor bayesiano nominal excluyente (perfil B).
+ * Demostración: ¿desde qué marco explica el alumno cómo cambian las
+ * especies a lo largo del tiempo? (Biología y Geología, ESO)
  *
- * Hipótesis excluyentes y sin orden entre ellas, por lo que no se usa IRT:
- * cada pregunta define una distribución explícita P(R = r | H_i, q) sobre
- * sus opciones de respuesta, y la actualización bayesiana es la estándar.
+ * Las tres hipótesis son marcos causales rivales e incompatibles para el
+ * MISMO fenómeno (por qué una especie acaba teniendo un rasgo útil): el
+ * alumno razona desde uno a la vez, así que solo uno puede ser cierto en
+ * cada alumno. Por eso el modelo es nominal excluyente y no multifactorial:
+ * no son errores que se acumulen, sino explicaciones que se sustituyen.
+ * Sin orden entre ellas, por lo que no se usa IRT: cada pregunta define una
+ * distribución explícita P(R = r | H_i, q) sobre sus opciones de respuesta,
+ * y la actualización bayesiana es la estándar.
  */
 
 const HIPOTESIS = [
   {
-    id: 'TACTO',
-    nombre: 'El tacto mide la temperatura',
+    id: 'LAMARCK',
+    nombre: 'El esfuerzo cambia el cuerpo y se hereda',
     resumen:
-      'confundes la sensación al tocar con la temperatura real ' +
-      '(«el metal está más frío que la madera»)',
+      'crees que cada ser vivo cambia su cuerpo al usarlo (o dejar de ' +
+      'usarlo) y transmite ese cambio a sus crías',
     descripcion:
-      'Cree que lo que notamos al tocar es la temperatura real del objeto: ' +
-      'si el metal se siente más frío que la madera, es que está más frío. ' +
-      'En realidad, los objetos que llevan tiempo en el mismo lugar están a ' +
-      'la misma temperatura; los buenos conductores (metal, baldosa) se ' +
-      'llevan el calor de la piel más deprisa y por eso se notan más fríos.',
+      'Piensa que los rasgos se adquieren durante la vida —por uso, desuso ' +
+      'o esfuerzo— y se heredan: la jirafa estiró el cuello y sus crías ' +
+      'nacieron con el cuello más largo. En realidad, lo que un individuo ' +
+      'desarrolla usando su cuerpo no pasa a los descendientes; la herencia ' +
+      'va en los genes, que no cambian por el esfuerzo.',
     recomendacion:
-      'Medir con un termómetro objetos de distintos materiales que lleven ' +
-      'tiempo en la misma habitación (metal, madera, plástico) y contrastar ' +
-      'la medida con la sensación. Después, introducir la conducción: los ' +
-      'materiales que conducen bien el calor se llevan el de la mano más ' +
-      'deprisa y por eso «se sienten» fríos.'
+      'Contrastar con casos claros: los hijos de personas muy musculadas no ' +
+      'nacen musculados. Después, introducir que la variación heredable ya ' +
+      'está en los genes antes de usar (o no) el órgano, y que el ambiente ' +
+      'no la fabrica: solo hace que unas variantes se reproduzcan más.'
   },
   {
-    id: 'ABRIGO',
-    nombre: 'La ropa produce calor',
+    id: 'FINALISMO',
+    nombre: 'Las especies cambian porque lo necesitan',
     resumen:
-      'piensas que abrigos, mantas y lana generan calor por sí mismos',
+      'crees que una especie desarrolla un rasgo «para» sobrevivir, ' +
+      'porque le hace falta',
     descripcion:
-      'Piensa que abrigos, mantas, lana o guantes generan calor por sí ' +
-      'mismos. En realidad son aislantes: no producen calor, sino que ' +
-      'frenan su paso, tanto para conservar lo caliente como lo frío.',
+      'Piensa que la evolución tiene una intención o una meta: la especie ' +
+      'desarrolla el rasgo porque lo necesita, o incluso anticipándose a lo ' +
+      'que necesitará. En realidad, la evolución no se propone nada ni ' +
+      'prevé el futuro; solo puede favorecer variantes que ya existen y que ' +
+      'resultan útiles en el momento.',
     recomendacion:
-      'Envolver un termómetro en un abrigo y comprobar que no sube; ' +
-      'envolver hielo en una bufanda y comprobar que dura más. Con esa ' +
-      'evidencia, introducir la idea de aislante: la ropa no produce ' +
-      'calor, frena su paso.'
+      'Distinguir «para qué sirve» (función) de «por qué apareció» (causa): ' +
+      'un rasgo puede ser útil sin que la especie lo buscara. Trabajar ' +
+      'casos donde la necesidad no basta: poblaciones que se extinguen ' +
+      'aunque «necesitaran» un cambio, porque la variante útil no existió.'
   },
   {
-    id: 'OK',
-    nombre: 'Modelo correcto',
+    id: 'SELECCION',
+    nombre: 'Modelo correcto: variación y selección',
     resumen:
-      'ya usas el modelo científico: los objetos de un mismo lugar ' +
-      'acaban a la misma temperatura, y la ropa aísla en vez de calentar',
+      'ya usas el modelo científico: hay variación al azar y el ambiente ' +
+      'hace que se reproduzcan más los mejor adaptados',
     descripcion:
-      'Sabe que los objetos de un mismo lugar acaban a la misma ' +
-      'temperatura (equilibrio térmico), que la sensación de frío o calor ' +
-      'depende de lo deprisa que el material conduce el calor, y que la ' +
-      'ropa y las mantas aíslan en lugar de calentar.',
+      'Sabe que en una población ya existen diferencias heredables surgidas ' +
+      'al azar, que el ambiente no las crea sino que hace que unos ' +
+      'individuos sobrevivan y se reproduzcan más que otros, y que así los ' +
+      'rasgos ventajosos se vuelven más frecuentes generación tras ' +
+      'generación, sin intención ni herencia del esfuerzo.',
     recomendacion:
-      'Avanzar hacia conductores y aislantes con ejemplos cuantitativos y ' +
-      'hacia la rapidez del equilibrio térmico: por qué todo acaba a la ' +
-      'temperatura ambiente y de qué depende que ocurra antes o después.'
+      'Avanzar hacia casos cuantitativos y contraintuitivos: deriva ' +
+      'genética, rasgos neutros que se extienden sin «mejorar» nada, ' +
+      'coevolución y ritmos de la evolución. Buen momento para modelizar ' +
+      'frecuencias de variantes a lo largo de las generaciones.'
   }
 ];
 
 /*
  * Banco de preguntas. Cada ítem tiene tres opciones; `pred` indica qué
- * opción elige cada modelo mental erróneo cuando la pregunta ataca ese
- * error (si la pregunta no lo ataca, no hay entrada y la verosimilitud
- * se genera como afectación parcial).
+ * opción elige cada marco erróneo cuando la pregunta lo ataca (si la
+ * pregunta no ataca ese marco, no hay entrada y la verosimilitud se genera
+ * como afectación parcial). Casi todos los ítems son discriminadores a tres
+ * bandas: una opción encarna cada marco (LAMARCK / FINALISMO / SELECCION),
+ * de modo que la respuesta separa las tres hipótesis a la vez.
  */
 const BANCO = [
   {
-    id: 'q1', corto: 'Barra de metal y listón de madera',
+    id: 'q1', corto: 'El cuello de la jirafa',
     enunciado:
-      'Una barra de metal y un listón de madera llevan toda la noche ' +
-      'sobre la mesa del laboratorio. Si mides su temperatura con un ' +
-      'termómetro, ¿qué encontrarás?',
+      'Hace mucho, las jirafas tenían el cuello más corto que ahora. ' +
+      '¿Cómo pasaron a tenerlo tan largo?',
     opciones: [
-      'La barra de metal está más fría',
-      'El listón de madera está más frío',
-      'Los dos están a la misma temperatura'
+      'Cada jirafa estiraba el cuello para alcanzar las hojas altas, se le ' +
+        'fue alargando y sus crías nacían con el cuello un poco más largo.',
+      'Las jirafas desarrollaron el cuello largo porque lo necesitaban ' +
+        'para alcanzar el alimento.',
+      'Ya nacían jirafas con el cuello de distinta longitud; las de cuello ' +
+        'más largo comían mejor y dejaban más crías, hasta que predominó.'
     ],
     correcta: 2,
-    pred: { TACTO: 0 },
+    pred: { LAMARCK: 0, FINALISMO: 1 },
     explicacion:
-      'Con el tiempo, todo lo que hay en el laboratorio alcanza la ' +
-      'temperatura del aire (equilibrio térmico). El metal «se siente» ' +
-      'más frío porque conduce el calor de tu mano más deprisa, pero el ' +
-      'termómetro marca lo mismo.'
+      'El estiramiento de una jirafa no se hereda, ni la especie «encarga» ' +
+      'un cuello largo. Entre jirafas que ya variaban en el cuello, las de ' +
+      'cuello más largo se alimentaban y reproducían más, y su rasgo se ' +
+      'hizo común generación tras generación.'
   },
   {
-    id: 'q2', corto: 'Cubito con bufanda',
+    id: 'q2', corto: 'Peces ciegos de las cuevas',
     enunciado:
-      'Para un experimento, envuelves un cubito de hielo en una bufanda ' +
-      'de lana y dejas otro igual al aire, en la misma mesa. ¿Cuál se ' +
-      'derrite antes?',
+      'Algunos peces que viven en cuevas totalmente oscuras son ciegos, ' +
+      'aunque sus antepasados veían. ¿Por qué se quedaron ciegos?',
     opciones: [
-      'El de la bufanda',
-      'El que está al aire',
-      'Los dos a la vez'
+      'Al vivir a oscuras dejaron de usar los ojos, se les fueron ' +
+        'atrofiando y pasaron esos ojos atrofiados a sus crías.',
+      'Perdieron los ojos porque en la oscuridad no les hacían falta.',
+      'Nacían con ojos de distinto tamaño; a oscuras ver no daba ninguna ' +
+        'ventaja, así que los de ojos reducidos no salían perjudicados y ' +
+        'su rasgo se extendió.'
     ],
-    correcta: 1,
-    pred: { ABRIGO: 0 },
-    explicacion:
-      'La lana no calienta: aísla. Frena el paso del calor del aire hacia ' +
-      'el hielo, así que el cubito envuelto se derrite más tarde.'
-  },
-  {
-    id: 'q3', corto: 'Termómetro en el abrigo',
-    enunciado:
-      'Un termómetro lleva horas en la habitación y marca 22 °C. Lo ' +
-      'envuelves media hora con un abrigo que también estaba allí. ' +
-      '¿Qué marcará al sacarlo?',
-    opciones: ['Más de 22 °C', 'Menos de 22 °C', '22 °C'],
     correcta: 2,
-    pred: { ABRIGO: 0 },
+    pred: { LAMARCK: 0, FINALISMO: 1 },
     explicacion:
-      'El abrigo no produce calor, solo frena su paso. Como el termómetro ' +
-      'ya estaba a la temperatura de la habitación, sigue marcando 22 °C.'
+      'El desuso no encoge los ojos de los descendientes, ni los peces ' +
+      '«deciden» perderlos. En la oscuridad, tener ojos grandes no daba ' +
+      'ventaja, así que las variantes con ojos reducidos se extendieron.'
   },
   {
-    id: 'q4', corto: 'Pasamanos del parque',
+    id: 'q3', corto: 'Bacterias resistentes',
     enunciado:
-      'En el mismo parque hay un pasamanos de metal y otro de madera. ' +
-      'El de metal se nota mucho más frío. ¿Por qué?',
+      'En un cultivo, un antibiótico mata casi todas las bacterias, pero ' +
+      'al tiempo la población vuelve, ahora resistente. ¿Qué ha pasado?',
     opciones: [
-      'Porque el metal está a menos temperatura que la madera',
-      'Porque el metal se lleva el calor de tu mano más deprisa',
-      'Porque el metal produce frío'
+      'Ya había unas pocas bacterias resistentes por azar; el antibiótico ' +
+        'mató al resto y solo ellas se multiplicaron.',
+      'El antibiótico obligó a cada bacteria a hacerse resistente, y esa ' +
+        'resistencia pasó a sus descendientes.',
+      'Las bacterias se hicieron resistentes porque necesitaban sobrevivir ' +
+        'al antibiótico.'
     ],
-    correcta: 1,
-    pred: { TACTO: 0, ABRIGO: 2 },
+    correcta: 0,
+    pred: { LAMARCK: 1, FINALISMO: 2 },
     explicacion:
-      'Los dos pasamanos están a la misma temperatura. El metal conduce ' +
-      'el calor de tu mano mucho más deprisa que la madera y por eso lo ' +
-      'notas más frío.'
+      'El antibiótico no fabrica la resistencia ni las bacterias la crean ' +
+      'a voluntad. Unas pocas ya eran resistentes por mutaciones previas; ' +
+      'al eliminar al resto, solo esas dejaron descendencia.'
   },
   {
-    id: 'q5', corto: 'Baldosa y alfombra',
+    id: 'q4', corto: 'Mariposas y hollín',
     enunciado:
-      'Por la mañana pisas descalzo la baldosa del baño y la alfombra de ' +
-      'tu cuarto. ¿Cuál está a menor temperatura?',
-    opciones: ['La baldosa', 'La alfombra', 'Las dos están igual'],
-    correcta: 2,
-    pred: { TACTO: 0 },
-    explicacion:
-      'Las dos están a la temperatura de la casa. La baldosa conduce el ' +
-      'calor de tus pies más deprisa y por eso la notas más fría.'
-  },
-  {
-    id: 'q6', corto: 'Hielo para la acampada',
-    enunciado:
-      'Compras una bolsa de hielo para una acampada y tienes una hora de ' +
-      'camino. Comparado con llevarla tal cual, si la envuelves en una ' +
-      'manta el hielo llegará…',
-    opciones: [
-      'Más derretido',
-      'Menos derretido',
-      'Igual de derretido'
-    ],
-    correcta: 1,
-    pred: { ABRIGO: 0 },
-    explicacion:
-      'La manta aísla: frena el paso del calor del aire hacia el hielo, ' +
-      'así que envuelto en la manta llega menos derretido.'
-  },
-  {
-    id: 'q7', corto: 'Lata y arroz en el congelador',
-    enunciado:
-      'Una lata de refresco y un paquete de arroz llevan un día entero en ' +
-      'el congelador. Al medirlos con un termómetro, ¿cuál está más frío?',
-    opciones: ['La lata', 'El paquete de arroz', 'Los dos están igual'],
-    correcta: 2,
-    pred: { TACTO: 0 },
-    explicacion:
-      'Tras un día entero, los dos están a la temperatura del congelador. ' +
-      'La lata se «siente» más fría porque el metal conduce mejor el calor.'
-  },
-  {
-    id: 'q8', corto: 'Guantes en invierno',
-    enunciado:
-      'En invierno, con guantes puestos, tienes las manos calientes. ' +
-      '¿De dónde sale ese calor?',
-    opciones: [
-      'Lo producen los guantes',
-      'Lo producen tus manos, y los guantes evitan que escape',
-      'Los guantes impiden que entre el frío'
-    ],
-    correcta: 1,
-    pred: { ABRIGO: 0 },
-    explicacion:
-      'El calor lo produce tu cuerpo. Los guantes son aislantes: evitan ' +
-      'que ese calor escape hacia el aire frío.'
-  },
-  {
-    id: 'q9', corto: 'Termómetro en la mesa de metal',
-    enunciado:
-      'Un termómetro marca 22 °C sobre un libro. Lo pasas a la mesa de ' +
-      'metal de la misma habitación y esperas un rato. ¿Qué marcará?',
-    opciones: ['Menos de 22 °C', '22 °C', 'Más de 22 °C'],
-    correcta: 1,
-    pred: { TACTO: 0 },
-    explicacion:
-      'El libro, la mesa de metal y el aire de la habitación están a la ' +
-      'misma temperatura, así que el termómetro sigue marcando 22 °C.'
-  },
-  {
-    id: 'q11', corto: 'Mango de sartén y paño de cocina',
-    enunciado:
-      'El mango de una sartén de metal y un paño de algodón llevan toda ' +
-      'la noche en el mismo cajón. Al tocarlos, el mango se nota bastante ' +
-      'más frío. ¿Por qué?',
-    opciones: [
-      'Porque el mango está a menos temperatura que el paño',
-      'Porque el mango conduce el calor de tu mano más deprisa',
-      'Porque el paño de algodón produce un poco de calor'
-    ],
-    correcta: 1,
-    pred: { TACTO: 0, ABRIGO: 2 },
-    explicacion:
-      'Los dos están a la misma temperatura del cajón. El metal conduce ' +
-      'el calor de tu mano mucho más deprisa que el algodón y por eso lo ' +
-      'notas más frío.'
-  },
-  {
-    id: 'q12', corto: 'Marco metálico y funda de silicona',
-    enunciado:
-      'Un móvil con marco de metal y funda de silicona lleva toda la ' +
-      'tarde sobre la mesa. Al tocarlo, el marco se nota más frío que la ' +
-      'funda. ¿Por qué?',
-    opciones: [
-      'Porque el marco está a menos temperatura que la funda',
-      'Porque el marco conduce el calor de tu mano más deprisa',
-      'Porque la funda de silicona ha calentado el marco'
-    ],
-    correcta: 1,
-    pred: { TACTO: 0, ABRIGO: 2 },
-    explicacion:
-      'El marco y la funda están a la misma temperatura. El metal conduce ' +
-      'el calor de tu mano mucho más deprisa que la silicona y por eso lo ' +
-      'notas más frío.'
-  },
-  {
-    id: 'q13', corto: 'Banco de piedra y banco de madera',
-    enunciado:
-      'En el mismo parque y a la misma sombra hay un banco de piedra y ' +
-      'uno de madera. Al sentarte, notas el de piedra mucho más frío. ' +
+      'En una zona donde los troncos se ennegrecieron por el hollín, las ' +
+      'mariposas claras casi desaparecieron y abundaron las oscuras. ' +
       '¿Por qué?',
     opciones: [
-      'Porque la piedra está a menos temperatura que la madera',
-      'Porque la piedra conduce el calor de tu cuerpo más deprisa',
-      'Porque la madera produce un poco de calor'
+      'El hollín fue oscureciendo a las mariposas claras, que se volvieron ' +
+        'oscuras y tuvieron crías oscuras.',
+      'Ya había mariposas claras y oscuras; sobre los troncos ennegrecidos ' +
+        'los pájaros cazaban más a las claras, así que quedaron sobre todo ' +
+        'las oscuras.',
+      'Las mariposas se volvieron oscuras porque necesitaban camuflarse en ' +
+        'los troncos.'
     ],
     correcta: 1,
-    pred: { TACTO: 0, ABRIGO: 2 },
+    pred: { LAMARCK: 0, FINALISMO: 2 },
     explicacion:
-      'Los dos bancos están a la misma temperatura. La piedra conduce el ' +
-      'calor de tu cuerpo mucho más deprisa que la madera y por eso la ' +
-      'notas más fría.'
+      'El hollín no tiñe a las mariposas de forma heredable ni ellas ' +
+      'cambian de color a voluntad. Entre las que ya existían, las oscuras ' +
+      'pasaban desapercibidas sobre los troncos sucios y sobrevivían más.'
   },
   {
-    id: 'q10', corto: 'Botellas frías y manta',
-    enunciado:
-      'Sacas dos botellas de agua muy fría de la nevera y envuelves una ' +
-      'con una manta. Media hora después, la botella envuelta está…',
+    id: 'q5', corto: 'El pelaje del oso polar',
+    enunciado: '¿Por qué los osos polares tienen el pelaje blanco?',
     opciones: [
-      'Más caliente que la otra',
-      'Más fría que la otra',
-      'Igual que la otra'
+      'Nacían osos de tonos distintos; los más claros cazaban mejor sin ' +
+        'ser vistos y dejaban más crías, hasta predominar el blanco.',
+      'El frío y la nieve fueron aclarando el pelo de cada oso a lo largo ' +
+        'de su vida, y así nacieron blancos.',
+      'Se volvieron blancos porque necesitaban camuflarse en la nieve.'
+    ],
+    correcta: 0,
+    pred: { LAMARCK: 1, FINALISMO: 2 },
+    explicacion:
+      'Ni la nieve destiñe el pelo de forma heredable ni la especie ' +
+      '«elige» el blanco. Entre osos de distinto tono, los más claros ' +
+      'cazaban mejor sin ser vistos y dejaron más descendencia.'
+  },
+  {
+    id: 'q6', corto: 'La velocidad del guepardo',
+    enunciado:
+      'Los guepardos actuales corren muchísimo. ¿Cómo llegaron a ser tan ' +
+      'veloces?',
+    opciones: [
+      'Sus antepasados corrían tanto que sus patas se hicieron más ' +
+        'rápidas, y transmitieron esa rapidez a las crías.',
+      'Se volvieron veloces porque necesitaban cazar presas rápidas.',
+      'Nacían guepardos de distinta rapidez; los más veloces cazaban más y ' +
+        'dejaban más crías, y así se acumuló la velocidad.'
+    ],
+    correcta: 2,
+    pred: { LAMARCK: 0, FINALISMO: 1 },
+    explicacion:
+      'Correr mucho no hace que las crías nazcan más veloces, ni la ' +
+      'especie encarga velocidad. Entre guepardos que ya variaban, los más ' +
+      'rápidos cazaban y se reproducían más.'
+  },
+  {
+    id: 'q7', corto: 'Pinzones tras la sequía',
+    enunciado:
+      'Tras una sequía en una isla solo quedaron semillas grandes y duras. ' +
+      'Un año después, los pinzones tenían de media el pico más grueso. ' +
+      '¿Por qué?',
+    opciones: [
+      'De tanto partir semillas duras, a cada pinzón se le engrosó el pico ' +
+        'y sus crías nacieron con el pico más grueso.',
+      'Ya había pinzones de pico más fino y más grueso; con solo semillas ' +
+        'duras, los de pico grueso comían y sobrevivían más, y dejaron más ' +
+        'crías.',
+      'Los pinzones desarrollaron el pico más grueso porque lo necesitaban ' +
+        'para las semillas duras.'
     ],
     correcta: 1,
-    pred: { ABRIGO: 0 },
+    pred: { LAMARCK: 0, FINALISMO: 2 },
     explicacion:
-      'La manta frena el paso del calor del aire hacia la botella: la ' +
-      'envuelta se mantiene fría durante más tiempo.'
+      'Usar el pico no lo engrosa de forma heredable, ni la necesidad crea ' +
+      'el rasgo. Entre los pinzones que ya variaban, los de pico grueso ' +
+      'aprovechaban mejor las semillas duras y dejaron más descendencia.'
+  },
+  {
+    id: 'q8', corto: 'Los brazos del herrero',
+    enunciado:
+      'Un herrero desarrolla unos brazos muy fuertes por su trabajo. ' +
+      'Según lo que sabemos de la herencia, sus hijos al nacer…',
+    opciones: [
+      'tendrán los brazos más fuertes de lo normal, porque heredan la ' +
+        'fuerza que su padre ganó trabajando.',
+      'tendrán brazos normales: lo que el padre desarrolló con su trabajo ' +
+        'no se transmite a los hijos.',
+      'tendrán brazos fuertes si la familia sigue necesitando ese trabajo.'
+    ],
+    correcta: 1,
+    pred: { LAMARCK: 0, FINALISMO: 2 },
+    explicacion:
+      'Los rasgos que se adquieren usando el cuerpo no se heredan: los ' +
+      'hijos del herrero nacen con brazos normales. La herencia va en los ' +
+      'genes, que el trabajo no modifica.'
+  },
+  {
+    id: 'q9', corto: '¿Cambiar para lo que vendrá?',
+    enunciado:
+      '¿Puede una especie desarrollar un rasgo nuevo porque le hará falta ' +
+      'en el futuro?',
+    opciones: [
+      'Sí: si el ambiente va a cambiar, la especie desarrolla a tiempo lo ' +
+        'que necesitará.',
+      'No: la evolución no se anticipa; solo puede favorecer variantes que ' +
+        'ya existen y que resultan útiles ahora.',
+      'Sí, pero solo si los individuos se esfuerzan mucho en usar esa parte ' +
+        'del cuerpo.'
+    ],
+    correcta: 1,
+    pred: { FINALISMO: 0, LAMARCK: 2 },
+    explicacion:
+      'La evolución no prevé el futuro ni responde a un esfuerzo heredado. ' +
+      'Solo puede actuar sobre la variación que ya existe: si la variante ' +
+      'útil no está, la especie no la «fabrica» porque le convenga.'
+  },
+  {
+    id: 'q10', corto: 'De dónde salen las diferencias',
+    enunciado:
+      'En una población, ¿de dónde salen las diferencias entre individuos ' +
+      'sobre las que actúa la selección natural?',
+    opciones: [
+      'Aparecen al azar (mutaciones y recombinación) antes de que el ' +
+        'ambiente influya.',
+      'Las produce el ambiente: cada individuo cambia según cómo vive y lo ' +
+        'transmite.',
+      'Las crea la especie según lo que necesita.'
+    ],
+    correcta: 0,
+    pred: { LAMARCK: 1, FINALISMO: 2 },
+    explicacion:
+      'La selección natural no crea las diferencias: las encuentra ya ' +
+      'hechas. La variación surge al azar (mutación y recombinación) antes ' +
+      'de que el ambiente favorezca unas variantes u otras.'
+  },
+  {
+    id: 'q11', corto: 'Las espinas del cactus',
+    enunciado:
+      'En muchos cactus, las hojas son espinas en lugar de hojas planas. ' +
+      '¿Cómo llegaron a ser así?',
+    opciones: [
+      'El calor del desierto fue secando y afilando las hojas de cada ' +
+        'cactus hasta volverlas espinas, y así nacieron sus descendientes.',
+      'El cactus transformó sus hojas en espinas porque necesitaba perder ' +
+        'menos agua.',
+      'Entre plantas con hojas más anchas o más estrechas, en el desierto ' +
+        'las de hoja reducida perdían menos agua y sobrevivían más, hasta ' +
+        'quedar las de espinas.'
+    ],
+    correcta: 2,
+    pred: { LAMARCK: 0, FINALISMO: 1 },
+    explicacion:
+      'El desierto no afila las hojas de forma heredable ni la planta ' +
+      'decide protegerse. Entre plantas que ya variaban, las de hojas ' +
+      'reducidas perdían menos agua y dejaron más descendencia.'
+  },
+  {
+    id: 'q12', corto: 'Colmillos de elefante y caza',
+    enunciado:
+      'En zonas con mucha caza furtiva por el marfil, cada vez nacen más ' +
+      'elefantes con colmillos pequeños o sin colmillos. ¿Por qué?',
+    opciones: [
+      'Siempre nacían algunos elefantes con colmillos pequeños; como a esos ' +
+        'no los cazaban, sobrevivían y dejaban más crías, y su rasgo se hizo ' +
+        'más común.',
+      'De tanto esconder los colmillos del peligro, se les fueron reduciendo ' +
+        'y sus crías nacieron con colmillos más pequeños.',
+      'Los elefantes redujeron sus colmillos porque los necesitaban pequeños ' +
+        'para librarse de los cazadores.'
+    ],
+    correcta: 0,
+    pred: { LAMARCK: 1, FINALISMO: 2 },
+    explicacion:
+      'El peligro no encoge los colmillos de forma heredable ni los ' +
+      'elefantes los reducen a voluntad. Los cazadores eliminan a los de ' +
+      'colmillos grandes, así que solo los de colmillos pequeños dejan crías.'
+  },
+  {
+    id: 'q13', corto: 'Ratas resistentes al veneno',
+    enunciado:
+      'En un edificio se usa un veneno para ratas durante años. Al final ' +
+      'quedan ratas a las que el veneno ya no hace efecto. ¿Qué ha pasado?',
+    opciones: [
+      'El veneno fue acostumbrando el cuerpo de cada rata, que se hizo ' +
+        'resistente y transmitió esa resistencia a sus crías.',
+      'Las ratas se hicieron resistentes porque necesitaban sobrevivir al ' +
+        'veneno.',
+      'Ya había alguna rata resistente por azar; el veneno mató al resto y ' +
+        'solo esas se reprodujeron.'
+    ],
+    correcta: 2,
+    pred: { LAMARCK: 0, FINALISMO: 1 },
+    explicacion:
+      'El veneno no fabrica la resistencia ni las ratas la crean porque les ' +
+      'convenga. Unas pocas ya eran resistentes por mutaciones previas; al ' +
+      'morir las demás, solo ellas dejaron descendencia.'
+  },
+  {
+    id: 'q14', corto: 'Aves que no vuelan',
+    enunciado:
+      'Algunas aves, como el avestruz, descienden de antepasados que ' +
+      'volaban, pero hoy no pueden volar. ¿Cómo se explica?',
+    opciones: [
+      'Dejaron de volar porque, viviendo en el suelo, ya no lo necesitaban.',
+      'Nacían aves que volaban mejor o peor; donde volar no daba ventaja, ' +
+        'las que invertían en correr o en tamaño sobrevivían igual o mejor, ' +
+        'y el vuelo se perdió.',
+      'De no usar las alas para volar, estas se fueron atrofiando y las crías ' +
+        'nacieron sin capacidad de vuelo.'
+    ],
+    correcta: 1,
+    pred: { LAMARCK: 2, FINALISMO: 0 },
+    explicacion:
+      'El desuso no atrofia las alas de forma heredable ni la especie decide ' +
+      'dejar de volar. Donde volar no daba ventaja, las variantes que ' +
+      'dedicaban recursos a otras cosas no salían perjudicadas y el vuelo se ' +
+      'fue perdiendo.'
+  },
+  {
+    id: 'q15', corto: 'Lagartijas de patas largas',
+    enunciado:
+      'En una isla con troncos anchos, las lagartijas tienen de media las ' +
+      'patas más largas que en otra isla con ramas finas. ¿Por qué?',
+    opciones: [
+      'De correr por troncos anchos, a cada lagartija se le fueron alargando ' +
+        'las patas y se las pasó a sus crías.',
+      'Nacían lagartijas de patas más largas y más cortas; en troncos anchos ' +
+        'las de patas largas corrían mejor y escapaban más, y dejaron más ' +
+        'crías.',
+      'Las lagartijas alargaron las patas porque las necesitaban para los ' +
+        'troncos anchos.'
+    ],
+    correcta: 1,
+    pred: { LAMARCK: 0, FINALISMO: 2 },
+    explicacion:
+      'Correr no alarga las patas de forma heredable ni la necesidad crea el ' +
+      'rasgo. Entre lagartijas que ya variaban, en troncos anchos las de ' +
+      'patas largas se movían mejor y sobrevivían más.'
+  },
+  {
+    id: 'q16', corto: 'Un dedo perdido en un accidente',
+    enunciado:
+      'Una persona pierde un dedo en un accidente y años después tiene ' +
+      'hijos. Al nacer, sus hijos…',
+    opciones: [
+      'nacerán también sin ese dedo, porque heredan el cambio que sufrió su ' +
+        'cuerpo.',
+      'nacerán con todos los dedos: una lesión sufrida en vida no se ' +
+        'transmite a los hijos.',
+      'nacerán sin ese dedo solo si el accidente ocurrió antes de tenerlos.'
+    ],
+    correcta: 1,
+    pred: { LAMARCK: 0 },
+    explicacion:
+      'Los cambios que le ocurren al cuerpo durante la vida —una lesión, un ' +
+      'músculo entrenado— no pasan a los descendientes. La herencia va en ' +
+      'los genes, que el accidente no modifica.'
+  },
+  {
+    id: 'q17', corto: 'El apéndice, que casi no sirve',
+    enunciado:
+      'El apéndice humano apenas cumple función y a veces incluso causa ' +
+      'problemas. Si no sirve para casi nada, ¿por qué seguimos teniéndolo?',
+    opciones: [
+      'Es un resto heredado de antepasados en los que sí era útil; como ' +
+        'tenerlo no supone una desventaja grande, no ha desaparecido.',
+      'Si todavía lo tenemos es porque en el fondo el cuerpo lo necesita ' +
+        'para algo.',
+      'Seguimos teniéndolo porque aún no ha pasado tiempo suficiente para ' +
+        'que desaparezca del todo.'
+    ],
+    correcta: 0,
+    pred: { FINALISMO: 1 },
+    explicacion:
+      'Que un órgano exista no significa que sea necesario. El apéndice es un ' +
+      'vestigio de antepasados donde sí cumplía función; la evolución no lo ' +
+      'ha eliminado porque tenerlo no penaliza lo suficiente, no porque haga ' +
+      'falta.'
+  },
+  {
+    id: 'q18', corto: '¿Evoluciona un individuo?',
+    enunciado:
+      'A lo largo de su vida, un mismo animal adulto, ¿puede evolucionar y ' +
+      'adaptarse genéticamente a un nuevo ambiente?',
+    opciones: [
+      'No: quien evoluciona es la población a lo largo de las generaciones; ' +
+        'un individuo adulto no cambia sus genes por vivir en otro ambiente.',
+      'Sí: se va adaptando poco a poco durante su vida y transmite esos ' +
+        'cambios a sus crías.',
+      'Sí: si el ambiente se lo exige, su cuerpo desarrolla lo que necesita.'
+    ],
+    correcta: 0,
+    pred: { LAMARCK: 1, FINALISMO: 2 },
+    explicacion:
+      'La evolución le ocurre a las poblaciones a lo largo de las ' +
+      'generaciones, no a un individuo durante su vida. Un adulto puede ' +
+      'aclimatarse (broncearse, ganar músculo), pero eso no cambia sus genes ' +
+      'ni pasa a sus hijos.'
+  },
+  {
+    id: 'q19', corto: '¿Hacia seres más perfectos?',
+    enunciado:
+      '¿Es cierto que la evolución va haciendo a los seres vivos cada vez ' +
+      'más perfectos o superiores?',
+    opciones: [
+      'Sí: la evolución tiene una dirección y mejora a las especies con el ' +
+        'tiempo.',
+      'No: solo favorece lo que funciona en cada ambiente; un rasgo «mejor» ' +
+        'en un sitio puede ser un estorbo en otro, y muchos cambios no ' +
+        'mejoran nada.',
+      'Sí, siempre que los individuos se esfuercen en mejorar y lo ' +
+        'transmitan a sus crías.'
+    ],
+    correcta: 1,
+    pred: { FINALISMO: 0, LAMARCK: 2 },
+    explicacion:
+      'La evolución no persigue la perfección ni tiene una escala de ' +
+      '«superioridad». Solo favorece variantes útiles aquí y ahora; lo ' +
+      'ventajoso en un ambiente puede ser perjudicial en otro, y muchos ' +
+      'rasgos se extienden sin mejorar nada.'
   }
 ];
 
@@ -296,16 +487,17 @@ const H_STOP = hStop(PARAMETROS.pMin, HIPOTESIS.length);
 /*
  * Matriz P(R = r | H_i, q) del ítem: una fila por hipótesis (en el orden
  * de HIPOTESIS), una columna por opción. Valores por tramos, no afinados:
- *  - dominio: 0.90 en la correcta, resto repartido (techo de descuido);
- *  - error atacado por la pregunta: 0.75 en su distractor y 0.15 de
+ *  - dominio (SELECCION): 0.90 en la correcta, resto repartido (techo de
+ *    descuido);
+ *  - marco atacado por la pregunta: 0.75 en su distractor y 0.15 de
  *    acierto (por debajo del suelo de azar: el distractor lo atrae);
- *  - error no atacado: afectación parcial (0.50 de acierto), con cierta
- *    atracción hacia el distractor intuitivo del otro error (0.30).
+ *  - marco no atacado: afectación parcial (0.50 de acierto), con cierta
+ *    atracción hacia el distractor intuitivo del otro marco (0.30).
  */
 function verosimilitudes(item) {
   return HIPOTESIS.map(function (h) {
     const fila = new Array(PARAMETROS.numOpciones).fill(0);
-    if (h.id === 'OK') {
+    if (h.id === 'SELECCION') {
       fila.fill(0.05);
       fila[item.correcta] = 0.90;
       return fila;

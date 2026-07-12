@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>¿Frío o caliente? — diagnóstico adaptativo sobre calor y temperatura</title>
+<title>¿Cómo cambian las especies? — diagnóstico adaptativo sobre evolución</title>
 <style>
   :root {
     --plano: #f9f9f7;
@@ -14,9 +14,9 @@
     --linea: #e1e0d9;
     --eje: #c3c2b7;
     --borde: rgba(11, 11, 11, 0.10);
-    --serie-tacto: #2a78d6;
-    --serie-abrigo: #1baf7a;
-    --serie-ok: #eda100;
+    --serie-lamarck: #2a78d6;
+    --serie-finalismo: #1baf7a;
+    --serie-seleccion: #eda100;
     --bien: #0ca30c;
     --bien-texto: #006300;
     --mal: #d03b3b;
@@ -32,9 +32,9 @@
       --linea: #2c2c2a;
       --eje: #383835;
       --borde: rgba(255, 255, 255, 0.10);
-      --serie-tacto: #3987e5;
-      --serie-abrigo: #199e70;
-      --serie-ok: #c98500;
+      --serie-lamarck: #3987e5;
+      --serie-finalismo: #199e70;
+      --serie-seleccion: #c98500;
       --bien: #0ca30c;
       --bien-texto: #0ca30c;
       --mal: #d03b3b;
@@ -109,7 +109,7 @@
   /* Aviso de demostración en el panel docente */
   .aviso-demo {
     border: 1px solid var(--borde);
-    border-left: 4px solid var(--serie-ok);
+    border-left: 4px solid var(--serie-seleccion);
     border-radius: 8px;
     padding: 8px 12px;
     margin: 12px 0 4px;
@@ -192,7 +192,7 @@
   .resultado h2 { margin-top: 0; }
   .banda-provisional {
     border: 1px solid var(--borde);
-    border-left: 4px solid var(--serie-ok);
+    border-left: 4px solid var(--serie-seleccion);
     border-radius: 8px;
     padding: 10px 14px;
     color: var(--tinta-2);
@@ -287,20 +287,21 @@
 <body>
 <main>
   <header>
-    <h1>¿Frío o caliente?</h1>
-    <p class="sub">Un reto sobre calor y temperatura que se adapta a tus respuestas (Física y Química, ESO).</p>
+    <h1>¿Cómo cambian las especies?</h1>
+    <p class="sub">Un reto sobre la evolución que se adapta a tus respuestas (Biología y Geología, ESO).</p>
   </header>
 
   <section id="pantalla-inicio" class="tarjeta">
-    <p>Te plantearé situaciones cotidianas sobre el frío y el calor. En cada
-    una, elige la respuesta que te parezca correcta. No es un examen: según
-    lo que respondas, el sistema elegirá la siguiente pregunta y, al final,
-    te dirá qué idea sobre el calor estás usando y qué te puede ayudar a
+    <p>Te plantearé situaciones sobre cómo llega una especie a tener un rasgo
+    útil (el cuello de la jirafa, el pelaje del oso polar…). En cada una,
+    elige la respuesta que te parezca correcta. No es un examen: según lo que
+    respondas, el sistema elegirá la siguiente pregunta y, al final, te dirá
+    qué idea sobre la evolución estás usando y qué te puede ayudar a
     afinarla.</p>
     <p class="sub" style="font-size:0.9rem">Suelen bastar entre 4 y 10 preguntas.</p>
     <h3 class="titulo-hipotesis">Qué comprueba este programa</h3>
     <p class="sub" style="font-size:0.95rem">Va acumulando evidencia para
-    decidir cuál de estas tres ideas sobre el calor explica mejor tus
+    decidir cuál de estas tres ideas sobre la evolución explica mejor tus
     respuestas:</p>
     <ul class="lista-hipotesis" id="lista-hipotesis"></ul>
     <button class="btn-principal" id="btn-empezar">Empezar</button>
@@ -365,8 +366,8 @@
   </details>
 
   <footer class="nota-demo">
-    Demostración de recurso adaptativo bayesiano de tipo nominal unifactorial
-    (hipótesis excluyentes, matriz de verosimilitudes explícita).
+    Demostración de recurso adaptativo bayesiano de tipo nominal excluyente
+    (perfil B: hipótesis rivales, matriz de verosimilitudes explícita).
   </footer>
 
   <footer class="site-footer">
@@ -384,9 +385,9 @@
   'use strict';
 
   const COLOR_HIPOTESIS = {
-    TACTO: 'var(--serie-tacto)',
-    ABRIGO: 'var(--serie-abrigo)',
-    OK: 'var(--serie-ok)'
+    LAMARCK: 'var(--serie-lamarck)',
+    FINALISMO: 'var(--serie-finalismo)',
+    SELECCION: 'var(--serie-seleccion)'
   };
 
   const $ = function (id) { return document.getElementById(id); };
@@ -494,7 +495,7 @@
         'Aviso de fiabilidad: tus respuestas siguen un patrón poco ' +
         'coherente con la idea diagnosticada (ajuste l_z = ' +
         ajuste.lz.toFixed(2) + '). Puede deberse a despistes, a responder ' +
-        'al azar o a una idea sobre el calor que este recurso no ' +
+        'al azar o a una idea sobre la evolución que este recurso no ' +
         'contempla. Tómalo con cautela y, si puedes, repite el reto con calma.';
     }
 

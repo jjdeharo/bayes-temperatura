@@ -1,31 +1,41 @@
-# ¿Frío o caliente? — demostración de recurso adaptativo bayesiano (tipo C)
+# ¿Cómo cambian las especies? — demostración de recurso adaptativo bayesiano (perfil B)
 
-Recurso web estático que diagnostica **qué modelo mental sobre el calor y la
-temperatura** usa el alumnado (Física y Química, ESO). Sirve como ejemplo de
-trabajo del modelo **nominal unifactorial (tipo C)** de la metodología de
+Recurso web estático que diagnostica **desde qué marco explica el alumnado la
+evolución** de los seres vivos (Biología y Geología, ESO). Sirve como ejemplo
+de trabajo del modelo **nominal excluyente (perfil B)** de la metodología de
 [recursos adaptativos bayesianos](https://github.com/jjdeharo/recursos-adaptativos):
 hipótesis mutuamente excluyentes y sin orden entre ellas, de modo que no se
 usa IRT sino una **matriz de verosimilitudes explícita** por pregunta.
 
+## Por qué las hipótesis son de verdad excluyentes
+
+El modelo nominal excluyente solo es honesto si las hipótesis son **marcos
+causales rivales** —el alumno razona desde uno a la vez—, no errores
+independientes que se acumulan (esos exigirían un modelo multifactorial,
+perfil C). Aquí las tres hipótesis son tres respuestas **incompatibles a una
+misma pregunta**: *¿por qué una especie acaba teniendo un rasgo útil?* Ante
+«¿la jirafa primero estiró el cuello o ya nació con él?», cada marco da una
+respuesta distinta y una sola.
+
 ## Hipótesis
 
-| Id | Modelo mental | Concepción errónea |
-|----|---------------|--------------------|
-| `TACTO` | El tacto mide la temperatura | Cree que lo que notamos al tocar es la temperatura real: «el metal está más frío que la madera». |
-| `ABRIGO` | La ropa produce calor | Piensa que abrigos, mantas y lana generan calor por sí mismos, en lugar de aislar. |
-| `OK` | Modelo correcto | Equilibrio térmico, conducción y aislamiento. |
+| Id | Marco | Idea central |
+|----|-------|--------------|
+| `LAMARCK` | El esfuerzo cambia el cuerpo y se hereda | El individuo adquiere el rasgo en vida (uso/desuso) y lo transmite: «la jirafa estiró el cuello y sus crías nacen con él». |
+| `FINALISMO` | Las especies cambian porque lo necesitan | La evolución tiene una meta o intención: la especie desarrolla el rasgo «para» sobrevivir, porque le hace falta. |
+| `SELECCION` | Modelo correcto | Variación heredable al azar + reproducción diferencial: el ambiente no crea el rasgo, favorece a los que ya lo tenían. |
 
-Son dos de las concepciones erróneas sobre calor y temperatura más
-documentadas en didáctica de las ciencias, y persisten durante toda la
-secundaria.
+El lamarckismo y el finalismo son dos de las concepciones alternativas sobre
+la evolución más documentadas en didáctica de las ciencias, y persisten
+durante toda la secundaria.
 
 Cada pregunta ofrece tres opciones y sus **distractores están diseñados para
-capturar cada modelo mental**: el sistema usa la distribución completa
+capturar cada marco**: el sistema usa la distribución completa
 `P(respuesta | hipótesis, pregunta)`, no solo acierto/fallo. La selección de
-la siguiente pregunta maximiza la ganancia esperada de información y el
-cierre firme exige `max p ≥ 0,80` y entropía `≤ H_stop` con un mínimo de 4
-preguntas (máximo 10). El resultado reporta la hipótesis MAP, su confianza,
-la distribución posterior completa y una recomendación pedagógica; si no se
+la siguiente pregunta maximiza la ganancia esperada de información y el cierre
+firme exige `max p ≥ 0,80` y entropía `≤ H_stop` con un mínimo de 4 preguntas
+(máximo 10). El resultado reporta la hipótesis MAP, su confianza, la
+distribución posterior completa y una recomendación pedagógica; si no se
 alcanza la confianza mínima, se marca como provisional.
 
 ## Archivos
@@ -47,23 +57,27 @@ Todo funciona en local sin servidor: basta abrir `index.html` en el navegador.
 Al cerrar la sesión se comprueba si el patrón de respuestas es coherente con
 la hipótesis diagnosticada (generalización politómica del índice `l_z`,
 calculada sobre la opción elegida en cada ítem). Si `l_z < −2`, el resultado
-se acompaña de un aviso de fiabilidad: puede haber descuidos, azar o una
-concepción sobre el calor que el modelo no contempla. Con pocas preguntas es
-una señal de cautela orientativa, no una prueba formal. El valor se muestra
-en directo en el panel docente.
+se acompaña de un aviso de fiabilidad: puede haber descuidos, azar o una idea
+sobre la evolución que el modelo no contempla. Con pocas preguntas es una
+señal de cautela orientativa, no una prueba formal. El valor se muestra en
+directo en el panel docente.
 
 ## Fiabilidad bajo el modelo
 
-Con 2000 simulaciones por hipótesis: 96–98 % de clasificación correcta en la
-diagonal, ~4,2 preguntas de media y ~100 % de cierres firmes. Es separabilidad
+Con un banco de 19 ítems y 500 simulaciones por hipótesis (semilla fija):
+~97 % de clasificación correcta en la diagonal, ~4 preguntas de media y 100 %
+de cierres firmes, sin confusiones sistemáticas entre marcos. Es separabilidad
 interna del diseño, no validez empírica: las verosimilitudes son juicios
 didácticos a priori, no parámetros calibrados con datos reales.
 
 ## Variedad en la primera pregunta
 
-El banco incluye varias preguntas (`q4`, `q11`, `q12`, `q13`) que atacan a la
-vez las dos concepciones erróneas en un mismo escenario (dos materiales de
-distinta conductividad, con una opción por cada hipótesis). Desde el prior
-uniforme, esas preguntas empatan en ganancia esperada de información y son
-más informativas que el resto, así que la sesión no siempre abre con la
-misma: el desempate aleatorio reparte el inicio entre las cuatro.
+La mayoría de los 19 ítems son **discriminadores a tres bandas**: una opción
+encarna cada marco (`LAMARCK` / `FINALISMO` / `SELECCION`), de modo que la
+respuesta separa las tres hipótesis a la vez. Desde el prior uniforme, esos
+ítems empatan en ganancia esperada de información, así que la sesión no siempre
+abre con la misma pregunta: el desempate aleatorio reparte el inicio entre
+ellos. El banco incluye además algún ítem que aísla un solo marco (la lesión
+que no se hereda, para el lamarckismo; el órgano vestigial, para el finalismo)
+y probes conceptuales (individuo frente a población, la idea de «progreso»),
+que dan textura y variedad al recorrido sin restar separabilidad.
