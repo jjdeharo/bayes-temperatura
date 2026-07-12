@@ -201,6 +201,44 @@
     font-size: 0.95rem;
   }
   .banda-fiabilidad { border-left-color: var(--mal); }
+
+  /* Veredicto claro: ¿visión correcta o concepción errónea? */
+  .veredicto-final {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 4px 0 16px;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--tinta);
+  }
+  .veredicto-final.correcto {
+    background: rgba(12, 163, 12, 0.10);
+    border: 1px solid var(--bien);
+  }
+  .veredicto-final.error {
+    background: rgba(208, 59, 59, 0.10);
+    border: 1px solid var(--mal);
+  }
+  .vf-icono {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    margin-top: 1px;
+  }
+  .veredicto-final.correcto .vf-icono { background: var(--bien); }
+  .veredicto-final.error .vf-icono { background: var(--mal); }
+  .vf-texto strong { font-weight: 700; }
+
   .diagnostico { margin: 4px 0 2px; font-size: 1.1rem; }
   .confianza { color: var(--tinta-2); margin: 0 0 14px; }
   .bloque h3 {
@@ -320,6 +358,7 @@
 
   <section id="pantalla-final" class="tarjeta resultado oculto" aria-live="polite">
     <h2>Resultado</h2>
+    <div id="veredicto-final" class="veredicto-final oculto"></div>
     <div id="aviso-provisional" class="banda-provisional oculto"></div>
     <div id="aviso-fiabilidad" class="banda-provisional banda-fiabilidad oculto"></div>
     <p class="diagnostico" id="texto-diagnostico"></p>
@@ -491,8 +530,36 @@
         'contempla. Tómalo con cautela y, si puedes, repite el reto con calma.';
     }
 
+    /* Veredicto inequívoco: ¿visión correcta o concepción errónea? Sin esto,
+       la etiqueta neutra («la idea que mejor explica…») puede leerse como que
+       un concepto erróneo es válido. Se enmarca como tarea a mejorar, no como
+       etiqueta de rasgo. El matiz «parece» se usa si el cierre es provisional. */
+    const vf = $('veredicto-final');
+    vf.classList.remove('oculto');
+    if (h.id === 'SELECCION') {
+      vf.className = 'veredicto-final correcto';
+      vf.innerHTML =
+        '<span class="vf-icono">✓</span><span class="vf-texto"><strong>' +
+        (parada.firme
+          ? 'Tienes una visión correcta de la evolución.'
+          : 'Tu visión de la evolución parece correcta.') +
+        '</strong> Explicas los cambios de las especies con el modelo ' +
+        'científico: ya existe variación al azar y el ambiente hace que se ' +
+        'reproduzcan más los mejor adaptados.</span>';
+    } else {
+      vf.className = 'veredicto-final error';
+      vf.innerHTML =
+        '<span class="vf-icono">!</span><span class="vf-texto"><strong>' +
+        (parada.firme
+          ? 'Atención: ahora mismo explicas la evolución con una idea equivocada.'
+          : 'Atención: parece que explicas la evolución con una idea equivocada.') +
+        '</strong> Es una concepción muy común, pero la ciencia la ha ' +
+        'descartado: conviene revisarla. Justo debajo tienes en qué falla y ' +
+        'cómo reforzarla.</span>';
+    }
+
     $('texto-diagnostico').textContent =
-      'Idea más probable: ' + h.nombre.toLowerCase() + '.';
+      'La idea que mejor explica tus respuestas: «' + h.nombre + '».';
     $('texto-confianza').textContent =
       'Confianza: ' + porcentaje(posterior[iMap]) +
       ' tras ' + historial.length + ' preguntas (' +
